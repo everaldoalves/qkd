@@ -11,18 +11,30 @@ function peer(room,role,msg){safe(room.members[role]?.ws,msg)}
 function note(room){return {type:'status',code:room.code,stage:room.stage,mode:room.mode,connected:Object.fromEntries(roles.map(r=>[r,Boolean(room.members[r]?.ws?.readyState===WebSocket.OPEN)])),counts:{emissor:room.original.length,espiao:room.spy.length,receptor:room.receiver.length},revelado:room.stage==='results'};}
 function broadcast(room){for(let role of roles){peer(room,role,note(room));sendRole(room,role)}}
 function sendRole(room,role){let data={type:'view',role,stage:room.stage,mode:room.mode,code:room.code};
- if(role==='emissor'){data.own=room.original; if(['reveal','results'].includes(room.stage))data.receiverBases=room.receiver.map(x=>x.base); if(room.stage==='results')data.result={...room.result,key:room.result.senderKey};}
- if(role==='espiao'){data.incoming=room.original.length===10&&room.mode==='attack'?room.original.map(()=>"◈"):[];data.own=room.spy.map(({base,bit})=>({base,bit})); if(room.stage==='results')data.result={...room.result,key:undefined};}
- if(role==='receptor'){data.incoming=room.mode==='direct'?room.original.length===10?room.original.map(()=>"◈"):[]:room.spy.length===10?room.spy.map(()=>"◈"):[];data.own=room.receiver; if(['reveal','results'].includes(room.stage))data.senderBases=room.original.map(x=>x.base); if(room.stage==='results')data.result={...room.result,key:room.result.receiverKey};}
+ if(role==='emissor'){data.own=room.original; if(['reveal','results'].includes(room.stage))data.receiverBases=room.receiver.map(x=>x.base); if(room.stage==='results')data.result={...room.result.public,key:room.result.senderKey};}
+ if(role==='espiao'){data.incoming=room.original.length===10&&room.mode==='attack'?room.original.map(()=>"◈"):[];data.own=room.spy.map(({base,bit})=>({base,bit})); if(room.stage==='results')data.result={...room.result.public};}
+ if(role==='receptor'){data.incoming=room.mode==='direct'?room.original.length===10?room.original.map(()=>"◈"):[]:room.spy.length===10?room.spy.map(()=>"◈"):[];data.own=room.receiver; if(['reveal','results'].includes(room.stage))data.senderBases=room.original.map(x=>x.base); if(room.stage==='results')data.result={...room.result.public,key:room.result.receiverKey};}
  peer(room,role,data);
 }
 function err(ws,msg){safe(ws,{type:'error',message:msg})}
 function validateRoom(code){return typeof code==='string'&&/^[A-F0-9]{8}$/.test(code)}
 function stage(room){if(room.original.length<10)return 'emit';if(room.mode==='attack'&&room.spy.length<10)return 'spy';if(room.receiver.length<10)return 'receive';return room.stage==='results'?'results':'reveal'}
-function result(room){let kept=[],discarded=[],tested=[],senderKey='',receiverKey='';for(let i=0;i<10;i++)(room.original[i].base===room.receiver[i].base?kept:discarded).push(i);let sample=kept.slice(0,2),errors=0;
- for(let i of sample){let a=room.original[i].bit,b=room.receiver[i].bit;errors+=Number(a!==b);tested.push({pos:i+1,emissor:a,receptor:b,error:a!==b})}
- for(let i of kept.slice(2)){senderKey+=room.original[i].bit;receiverKey+=room.receiver[i].bit}
- return {kept:kept.map(i=>i+1),discarded:discarded.map(i=>i+1),tested,errors,samples:sample.length,rate:sample.length?100*errors/sample.length:null,senderKey,receiverKey,spyWrong:room.spy.filter(x=>!x.correct).length};}
+function result(room){
+ const kept=[],discarded=[],tested=[];
+ for(let i=0;i<10;i++)(room.original[i].base===room.receiver[i].base?kept:discarded).push(i);
+ const sample=kept.slice(0,2),keyPositions=kept.slice(2);
+ for(const i of sample){const a=room.original[i].bit,b=room.receiver[i].bit;tested.push({pos:i+1,emissor:a,receptor:b,error:a!==b});}
+ const senderKey=keyPositions.map(i=>room.original[i].bit).join('');
+ const receiverKey=keyPositions.map(i=>room.receiver[i].bit).join('');
+ const mismatchPositions=keyPositions.filter(i=>room.original[i].bit!==room.receiver[i].bit).map(i=>i+1);
+ const alteredPositions=room.mode==='attack'?room.spy.map((p,i)=>p.bit!==room.original[i].bit?i+1:null).filter(Boolean):[];
+ const spyWrongPositions=room.mode==='attack'?room.spy.map((p,i)=>!p.correct?i+1:null).filter(Boolean):[];
+ const samples=sample.length,errors=tested.filter(t=>t.error).length;
+ const status=keyPositions.length===0?'insufficient':mismatchPositions.length?'divergent':'matching';
+ return {senderKey,receiverKey,public:{kept:kept.map(i=>i+1),discarded:discarded.map(i=>i+1),tested,errors,samples,rate:samples?100*errors/samples:null,
+  keyPositions:keyPositions.map(i=>i+1),status,mismatchPositions,alteredPositions,spyWrongPositions,mode:room.mode,
+  spyWrong:spyWrongPositions.length,altered:alteredPositions.length}};
+}
 function handle(ws,m){if(!m||typeof m!=='object'||Array.isArray(m))return err(ws,'Mensagem inválida.');
  if(m.action==='join'){
   let role=m.role,room,roomCode=String(m.code||'').trim().toUpperCase();if(!roles.includes(role))return err(ws,'Selecione um papel válido.');

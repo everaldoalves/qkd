@@ -12,3 +12,9 @@
 .bit-guide p{margin:9px 0}
 .bit-table{min-width:650px}
 @media(max-width:760px){.bit-map{grid-template-columns:repeat(2,minmax(0,1fr))}.photon{min-height:93px}}
+
+/* Resultado da conferência da chave candidata */
+.comparison-result{margin:20px 0;padding:17px 19px;border:1px solid #5d7a9e;border-radius:14px;background:#1b2c45}
+.comparison-result h3{margin-bottom:8px}
+.comparison-status{font-size:21px;font-weight:800;margin:0 0 7px}
+.comparison-result p:last-child{margin-bottom:0}
