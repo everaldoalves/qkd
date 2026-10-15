@@ -18,3 +18,5 @@
 .comparison-result h3{margin-bottom:8px}
 .comparison-status{font-size:21px;font-weight:800;margin:0 0 7px}
 .comparison-result p:last-child{margin-bottom:0}
+
+.report-area{border:1px solid #5b8bb0;background:#172e45;border-radius:14px;padding:18px;margin:22px 0}.report-names{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.report-names label{font-size:12px;font-weight:700;color:#d8eafe}.report-names input{margin-top:7px;font-weight:400}@media(max-width:760px){.report-names{grid-template-columns:1fr}}

@@ -47,6 +47,13 @@ function handle(ws,m){if(!m||typeof m!=='object'||Array.isArray(m))return err(ws
   safe(ws,{type:'joined',role,code:roomCode,token:t,mode:room.mode});broadcast(room);return;
  }
  if(!ws.room||!ws.role)return err(ws,'Entre em uma sala antes.');const room=rooms.get(ws.room);if(!room||room.members[ws.role]?.ws!==ws)return err(ws,'Sua sessão expirou.');let r=ws.role;
+ if(m.action==='report'){
+  if(room.stage!=='results'||!room.result)return err(ws,'Conclua o experimento antes de gerar o relatório.');
+  // Auditoria deliberadamente revelada apenas após encerrar a missão. Não usar como segredo real.
+  safe(ws,{type:'reportData',audit:{code:room.code,mode:room.mode,created:room.created,
+   original:room.original,spy:room.mode==='attack'?room.spy:[],receiver:room.receiver,
+   result:room.result.public,senderKey:room.result.senderKey,receiverKey:room.result.receiverKey}});return;
+ }
  if(m.action==='flip'){
   if(room.stage!==({emissor:'emit',espiao:'spy',receptor:'receive'}[r]))return err(ws,'Aguarde sua etapa.');
   if(r==='emissor')room.original.push(photon());
