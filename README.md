@@ -1,4 +1,4 @@
-# Missão 3 — O Token do Satélite Quântico (online)
+# O Token do Satélite Quântico (online)
 
 Aplicação web colaborativa em tempo real. Uma única URL para Emissor, Espião e Receptor, sem instalação por parte dos alunos. Esta é uma **simulação didática**, e não um protocolo QKD real.
 
